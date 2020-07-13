@@ -2,9 +2,7 @@ package com.zxh.NioTest;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
 
 public class SocketChannelTest {
@@ -15,12 +13,12 @@ public class SocketChannelTest {
 		
 		// socketChannel可以设置非阻塞模式，connect()不会阻塞，需要循环调用finishConnect()来确认连接
 		socketChannel.configureBlocking(false);
-		socketChannel.connect(new InetSocketAddress("http://localhost", 9091));
+		socketChannel.connect(new InetSocketAddress("localhost", 9091));
 		while(!socketChannel.finishConnect()) {
-			
+			System.out.println("waiting for connect");
 		}
 		
-		ByteBuffer writeBuffer = ByteBuffer.allocate(1024);
+		ByteBuffer writeBuffer = ByteBuffer.allocate(48);
 		
 		//写入数据到目标服务器
 		String newData = "New String to write to file..." + System.currentTimeMillis();
@@ -29,22 +27,28 @@ public class SocketChannelTest {
 		writeBuffer.flip();
 		
 		while(writeBuffer.hasRemaining()) {
+			System.out.println("写入数据到channel");
 			socketChannel.write(writeBuffer);
 		}
 		writeBuffer.clear();
 		
-		int byteReads = 0;
-		ByteBuffer readBuffer = ByteBuffer.allocate(1024);
-		while((byteReads = socketChannel.read(readBuffer)) != -1 ) {
-			// 反转buffer，从读变为写
-			readBuffer.flip();
-			
-			StringBuilder builder = new StringBuilder();
-			while(readBuffer.hasRemaining()) {
-				// 把buffer的数据写到目标中
-				builder.append((char)readBuffer.get());
-			}
-		}
+//		int byteReads = 0;
+//		ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+//		
+//		while((byteReads = socketChannel.read(readBuffer)) != -1 ) {
+//			// 反转buffer，从读变为写
+//			readBuffer.flip();
+//			StringBuilder builder = new StringBuilder();
+//			while(readBuffer.hasRemaining()) {
+//				// 把buffer的数据写到目标中
+//				builder.append((char)readBuffer.get());
+//			}
+//			System.out.println(builder.toString());
+//			
+//			readBuffer.clear();
+//		}
+		
+		socketChannel.close();
 		
 	}
 
