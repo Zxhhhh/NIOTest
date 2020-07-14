@@ -8,6 +8,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
 
 public class MyServer {
 	
@@ -62,20 +63,50 @@ public class MyServer {
 					write(channel, "hello client".getBytes());
 				}
 				if(key.isReadable()) {
-					// read(key);
+					read(key);
 				}
 				iterator.remove();
 			}
 		}
 	}
 	
+	/**
+	 * 把数据writeData写入到通道channel中
+	 * (需要先把writeData写入到缓冲区byteBuffer中，再由byteBuffer写到通道channel中)
+	 * @param channel
+	 * @param writeData
+	 * @throws IOException
+	 */
 	private void write(SocketChannel channel,byte[] writeData)  throws IOException{
 		byteBuffer.clear();
+		byteBuffer.put(writeData);
 		// 把byteBuffer 从写模式改成读模式
 		byteBuffer.flip();
 		
-		// 讲缓冲区的数据写入到通道中，如果channel是非阻塞的，则要用while(byteBuffer.hasRemaing())来重复写
+		// 将缓冲区的数据写入到通道中，如果channel是非阻塞的，则要用while(byteBuffer.hasRemaing())来重复写
 		channel.write(byteBuffer);
+	}
+	
+	/**
+	 * 把key所属通道的数据写到缓冲区byteBuffer中，并打印
+	 * @param key
+	 * @throws IOException
+	 */
+	private void read(SelectionKey key) throws IOException {
+		SocketChannel socketChannel = (SocketChannel) key.channel();
+		int readCount;
+		byteBuffer.clear();
+		// 从通道channel中读数据到缓冲区byteBuffer,此时byteBuffer为写模式
+		while((readCount = socketChannel.read(byteBuffer))>0) {
+			// 把buffer的模式从【写模式】改为【读模式】
+			byteBuffer.flip();
+			while(byteBuffer.hasRemaining()) {
+				System.out.println((char)byteBuffer.get());
+			}
+		}
+		if(readCount < 0) {
+			socketChannel.close();
+		}
 	}
 	
 	// 向Selector注册通道
@@ -85,6 +116,15 @@ public class MyServer {
 		}
 		channel.configureBlocking(false);
 		channel.register(selector, opRead);
+	}
+	
+	public static void main(String[] args) {
+		MyServer server = new MyServer(9091);
+		try {
+			server.listener();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }
